@@ -1,0 +1,92 @@
+MODEL.USERINFO
+public class Userinfo
+{
+        [Key]
+        public int userid { get; set; }
+        public string username { get; set; }
+
+        public string email { get; set; }
+
+        public string password { get; set; }
+
+}
+
+CONTROLLER.USERINFO
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using WebApplication5.Models;
+
+namespace WebApplication5.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserinfoController : ControllerBase
+    {
+        private readonly IConfiguration _configuration;
+        public UserinfoController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+        //api method to get data from userinfo table
+        [HttpGet]
+        public JsonResult Get()
+        {
+            //   these are raw queries we can use ef or stored procedures here
+            string query = @"             
+            select * from dbo.user_info ";
+
+            DataTable Table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("Userinfocon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    Table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult(Table);
+        }
+
+
+        [HttpPost]
+        public JsonResult Post(Userinfo usin)
+        {
+            string query =
+            @"insert into user_info (userid ,username,email,password) 
+                      values( '" + usin.userid + @"',
+                      '" + usin.username + @"',
+                      '" + usin.email + @"',
+                      '" + usin.password + @"')
+                       ";
+            DataTable table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("Userinfocon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    /* myCommand.Parameters.AddWithValue*/
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult("Added Successfully");
+        }
+    }
+}
